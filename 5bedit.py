@@ -9,84 +9,53 @@ lvl[2][1] = '/'
 screenw, screenh = lvlw * tsize, lvlh * tsize
 
 screen = pygame.display.set_mode([screenw,screenh])
-tile_red = pygame.image.load(os.path.join('data', 'wall_red.png')).convert()
+current = '/'
 
-outline_corner = pygame.image.load(os.path.join('data', 'outline_corner.png')).convert_alpha()
-outline_1side = pygame.image.load(os.path.join('data', 'outline_1side.png')).convert_alpha()
-outline_2sides = pygame.image.load(os.path.join('data', 'outline_2sides.png')).convert_alpha()
-outline_3sides = pygame.image.load(os.path.join('data', 'outline_3sides.png')).convert_alpha()
-outline_4sides = pygame.image.load(os.path.join('data', 'outline_4sides.png')).convert_alpha()
-
-
-def get_outlines(sides, corners):
-    if sum(sides) == 0: # all 4 sides have outlines
-        outlines = outline_4sides
-    elif sum(sides) == 1: # 3 sides have outlines
-        for i in range(4):
-            if sides[i]:
-                outlines = pygame.transform.rotate(outline_3sides, -90 * i)
-                break
-    elif sum(sides) == 2: # 2 sides have outlines
-        # cover the case where the 2 outlines are opposite each other first
-        if (not sides[0]) and (not sides[2]): # =
-            outlines = outline_1side.copy()
-            outlines.blit(pygame.transform.rotate(outlines, 180), (0, 0))
-        elif (not sides[1]) and (not sides[3]): # ||
-            outlines = pygame.transform.rotate(outline_1side, 90)
-            outlines.blit(pygame.transform.rotate(outlines, 180), (0, 0))
-        else: # L (rotated some)
-            for i in range(4):
-                if (not sides[i]) and (not sides[i - 1]):
-                    outlines = pygame.transform.rotate(outline_2sides, -90 * i)
-                    if not corners[(i + 2) % 4]:
-                        outlines.blit(pygame.transform.rotate(outline_corner, -90 * i), (0, 0))
-                    break
-    elif sum(sides) == 3: # 1 side has outline
-        for i in range(4):
-            if not sides[i]:
-                outlines = pygame.transform.rotate(outline_1side, -90 * i)
-                if not corners[(i + 2) % 4]:
-                    outlines.blit(pygame.transform.rotate(outline_corner, -90 * i), (0, 0))
-                if not corners[(i + 3) % 4]:
-                    outlines.blit(pygame.transform.rotate(outline_corner, -90 * i - 90), (0, 0))
-                break
-    else: # 0 sides, maybe corners
-        outlines = pygame.Surface((30, 30), pygame.SRCALPHA)
-        outlines.fill((0, 0, 0, 0)) # transparent
-        for i in range(4):
-            if not corners[i]:
-                outlines.blit(pygame.transform.rotate(outline_corner, -90 * i + 180), (0, 0))
-    return outlines
-
+import tiles
 
 while 1:
     for event in pygame.event.get():
         if event.type == pygame.QUIT: sys.exit()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_1: current = '/'
+            elif event.key == pygame.K_2: current = '8'
+            elif event.key == pygame.K_3: current = 'w'
+            elif event.key == pygame.K_4: current = '€'
+            elif event.key == pygame.K_5: current = '²'
+            elif event.key == pygame.K_6: current = '¼'
+            elif event.key == pygame.K_7: current = '¶'
+            elif event.key == pygame.K_8: current = 'º'
+            elif event.key == pygame.K_9: current = '/B'
 
     mL, _, mR = pygame.mouse.get_pressed()
     mx, my = pygame.mouse.get_pos()
     mxtile = mx // tsize
     mytile = my // tsize
     if mL:
-        lvl[mxtile][mytile] = '/'
+        lvl[mxtile][mytile] = current
     elif mR:
         lvl[mxtile][mytile] = '.'
 
     screen.fill((255, 255, 255))
     for i in range(lvlw):
         for j in range(lvlh):
-            if lvl[i][j] == '/':
-                sides = [lvl[i][j - 1] == '/' if j - 1 >= 0 else True,
-                         lvl[i + 1][j] == '/' if i + 1 < lvlw else True,
-                         lvl[i][j + 1] == '/' if j + 1 < lvlh else True,
-                         lvl[i - 1][j] == '/' if i - 1 >= 0 else True]
-                corners = [lvl[i - 1][j - 1] == '/' if i - 1 >= 0 and j - 1 >= 0 else True,
-                           lvl[i + 1][j - 1] == '/' if i + 1 < lvlw and j - 1 >= 0 else True,
-                           lvl[i + 1][j + 1] == '/' if i + 1 < lvlw and j + 1 < lvlh else True,
-                           lvl[i - 1][j + 1] == '/' if i - 1 >= 0 and j + 1 < lvlh else True]
-                tile = tile_red.copy()
-                if not sides == corners == [True, True, True, True]: # if not (no outlines)
-                    tile.blit(get_outlines(sides, corners), (0, 0))
+            cdraw = lvl[i][j]
+            if not(cdraw == '.'):
+                tile = tiles.tiles[cdraw].sprite.copy()
+                outline_mode = tiles.tiles[cdraw].outline_mode
+                if outline_mode != 0:
+                    sides = [lvl[i][j - 1] == cdraw if j - 1 >= 0 else True,
+                             lvl[i + 1][j] == cdraw if i + 1 < lvlw else True,
+                             lvl[i][j + 1] == cdraw if j + 1 < lvlh else True,
+                             lvl[i - 1][j] == cdraw if i - 1 >= 0 else True]
+                    corners = [lvl[i - 1][j - 1] == cdraw if i - 1 >= 0 and j - 1 >= 0 else True,
+                               lvl[i + 1][j - 1] == cdraw if i + 1 < lvlw and j - 1 >= 0 else True,
+                               lvl[i + 1][j + 1] == cdraw if i + 1 < lvlw and j + 1 < lvlh else True,
+                               lvl[i - 1][j + 1] == cdraw if i - 1 >= 0 and j + 1 < lvlh else True]
+                    if not sides == corners == [True, True, True, True]: # if there are outlines
+                        outline_graphics = tiles.outline_normal if outline_mode == 1 else tiles.outline_factory
+                        tile.blit(tiles.get_outlines(sides, corners, outline_graphics), (0, 0))
+               
                 screen.blit(tile, (i * tsize, j * tsize))
     pygame.display.flip()
     

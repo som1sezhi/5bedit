@@ -16,7 +16,6 @@ outline_factory = [load_sprite('outline_corner_factory'),
                   load_sprite('outline_4sides_factory')]
 
 
-
 def get_outlines(sides, corners, outline_graphics):
     o_corner, o_1side, o_2sides, o_3sides, o_4sides = outline_graphics
     if sum(sides) == 0: # all 4 sides have outlines

@@ -27,7 +27,7 @@ while 1:
             elif event.key == pygame.K_8: current = 'º'
             elif event.key == pygame.K_9: current = '/B'
 
-    mL, _, mR = pygame.mouse.get_pressed()
+    mL, mM, mR = pygame.mouse.get_pressed()
     mx, my = pygame.mouse.get_pos()
     mxtile = mx // tsize
     mytile = my // tsize
@@ -35,6 +35,8 @@ while 1:
         lvl[mxtile][mytile] = current
     elif mR:
         lvl[mxtile][mytile] = '.'
+    elif mM:
+        current = lvl[mxtile][mytile]
 
     screen.fill((255, 255, 255))
     for i in range(lvlw):

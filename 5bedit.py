@@ -9,13 +9,13 @@ lvl[2][1] = '/'
 screenw, screenh = lvlw * tsize, lvlh * tsize
 
 screen = pygame.display.set_mode([screenw,screenh])
-tile_red = pygame.image.load(os.path.join('data', 'tile_red.png')).convert()
+tile_red = pygame.image.load(os.path.join('data', 'wall_red.png')).convert()
 
-outline_corner = pygame.image.load(os.path.join('data', 'corner.png')).convert_alpha()
-outline_1side = pygame.image.load(os.path.join('data', '1side.png')).convert_alpha()
-outline_2sides = pygame.image.load(os.path.join('data', '2sides.png')).convert_alpha()
-outline_3sides = pygame.image.load(os.path.join('data', '3sides.png')).convert_alpha()
-outline_4sides = pygame.image.load(os.path.join('data', '4sides.png')).convert_alpha()
+outline_corner = pygame.image.load(os.path.join('data', 'outline_corner.png')).convert_alpha()
+outline_1side = pygame.image.load(os.path.join('data', 'outline_1side.png')).convert_alpha()
+outline_2sides = pygame.image.load(os.path.join('data', 'outline_2sides.png')).convert_alpha()
+outline_3sides = pygame.image.load(os.path.join('data', 'outline_3sides.png')).convert_alpha()
+outline_4sides = pygame.image.load(os.path.join('data', 'outline_4sides.png')).convert_alpha()
 
 
 def get_outlines(sides, corners):

@@ -26,6 +26,10 @@ while 1:
             elif event.key == pygame.K_7: current = '¶'
             elif event.key == pygame.K_8: current = 'º'
             elif event.key == pygame.K_9: current = '/B'
+            elif event.key == pygame.K_q: current = '7'
+            elif event.key == pygame.K_w: current = '9'
+            elif event.key == pygame.K_e: current = '{'
+            elif event.key == pygame.K_r: current = '®'
 
     mL, mM, mR = pygame.mouse.get_pressed()
     mx, my = pygame.mouse.get_pos()
@@ -57,7 +61,18 @@ while 1:
                     if not sides == corners == [True, True, True, True]: # if there are outlines
                         outline_graphics = tiles.outline_normal if outline_mode == 1 else tiles.outline_factory
                         tile.blit(tiles.get_outlines(sides, corners, outline_graphics), (0, 0))
-               
+                if tiles.tiles[cdraw].bg:
+                    sides = [tiles.check_shadows(lvl[i][j - 1], 0, 1) if j - 1 >= 0 else True,
+                             tiles.check_shadows(lvl[i + 1][j], -1, 0) if i + 1 < lvlw else True,
+                             tiles.check_shadows(lvl[i][j + 1], 0, -1) if j + 1 < lvlh else True,
+                             tiles.check_shadows(lvl[i - 1][j], 1, 0) if i - 1 >= 0 else True]
+                    corners = [tiles.check_shadows(lvl[i - 1][j - 1], 1, 1) if i - 1 >= 0 and j - 1 >= 0 else True,
+                               tiles.check_shadows(lvl[i + 1][j - 1], -1, 1) if i + 1 < lvlw and j - 1 >= 0 else True,
+                               tiles.check_shadows(lvl[i + 1][j + 1], -1, -1) if i + 1 < lvlw and j + 1 < lvlh else True,
+                               tiles.check_shadows(lvl[i - 1][j + 1], 1, -1) if i - 1 >= 0 and j + 1 < lvlh else True]
+                    if not sides == corners == [True, True, True, True]: # if there are outlines
+                        shadow_graphics = tiles.shadows
+                        tile.blit(tiles.get_outlines(sides, corners, shadow_graphics), (0, 0))
                 screen.blit(tile, (i * tsize, j * tsize))
     pygame.display.flip()
     

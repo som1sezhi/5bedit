@@ -14,10 +14,15 @@ outline_factory = [load_sprite('outline_corner_factory'),
                   load_sprite('outline_2sides_factory'),
                   load_sprite('outline_3sides_factory'),
                   load_sprite('outline_4sides_factory')]
+shadows = [load_sprite('shadow_corner'),
+           load_sprite('shadow_1side'),
+           load_sprite('shadow_2sides'),
+           load_sprite('shadow_3sides'),
+           load_sprite('shadow_4sides')]
 
 
-def get_outlines(sides, corners, outline_graphics):
-    o_corner, o_1side, o_2sides, o_3sides, o_4sides = outline_graphics
+def get_outlines(sides, corners, outline_set):
+    o_corner, o_1side, o_2sides, o_3sides, o_4sides = outline_set
     if sum(sides) == 0: # all 4 sides have outlines
         outlines = o_4sides
     elif sum(sides) == 1: # 3 sides have outlines
@@ -58,19 +63,44 @@ def get_outlines(sides, corners, outline_graphics):
     return outlines
 
 
+# note: False means shadow is cast
+def check_shadows(ch, i_off, j_off):
+    mode = tiles[ch].cast_shadows
+    if mode == "none": return True # no shadows
+    elif mode == "all": return False # all shadows
+    else:
+        if  i_off != 0 and j_off != 0: return True # if corner, no shadows
+        elif mode == "sides": return False # then if sides, yes shadows
+        elif mode == "up" and j_off == -1: return False
+        elif mode == "right" and i_off == 1: return False
+        elif mode == "down" and j_off == 1: return False
+        elif mode == "left" and i_off == -1: return False
+        else: return True
+
+
 class Tile:
-    def __init__(self, sprite, outline_mode=0):
+    def __init__(self, sprite, outline_mode=0, cast_shadows="none", bg=False):
         self.sprite = sprite
         self.outline_mode = outline_mode
+        self.cast_shadows = cast_shadows
+        self.bg = bg
         
 
 tiles = {}
-tiles['/'] = Tile(load_sprite('wall_red'), outline_mode=1)
-tiles['8'] = Tile(load_sprite('wall_green'), outline_mode=1)
-tiles['w'] = Tile(load_sprite('wall_purple'), outline_mode=1)
-tiles['€'] = Tile(load_sprite('wall_tan'), outline_mode=1)
-tiles['²'] = Tile(load_sprite('wall_factorygrey'), outline_mode=2)
-tiles['¼'] = Tile(load_sprite('wall_factorydarkgrey'), outline_mode=2)
-tiles['¶'] = Tile(load_sprite('wall_factoryyellow'), outline_mode=2)
-tiles['º'] = Tile(load_sprite('wall_factoryred'), outline_mode=2)
-tiles['/B'] = Tile(load_sprite('wall_yellow'), outline_mode=1)
+tiles['.'] = Tile(None)
+# walls
+tiles['/'] = Tile(load_sprite('wall_red'), outline_mode=1, cast_shadows="all")
+tiles['8'] = Tile(load_sprite('wall_green'), outline_mode=1, cast_shadows="all")
+tiles['w'] = Tile(load_sprite('wall_purple'), outline_mode=1, cast_shadows="all")
+tiles['€'] = Tile(load_sprite('wall_tan'), outline_mode=1, cast_shadows="all")
+tiles['²'] = Tile(load_sprite('wall_factorygrey'), outline_mode=2, cast_shadows="all")
+tiles['¼'] = Tile(load_sprite('wall_factorydarkgrey'), outline_mode=2, cast_shadows="all")
+tiles['¶'] = Tile(load_sprite('wall_factoryyellow'), outline_mode=2, cast_shadows="all")
+tiles['º'] = Tile(load_sprite('wall_factoryred'), outline_mode=2, cast_shadows="all")
+tiles['/B'] = Tile(load_sprite('wall_yellow'), outline_mode=1, cast_shadows="all")
+
+# bg
+tiles['7'] = Tile(load_sprite('bg_red'), bg=True)
+tiles['9'] = Tile(load_sprite('bg_green'), bg=True)
+tiles['{'] = Tile(load_sprite('bg_purple'), bg=True)
+tiles['®'] = Tile(load_sprite('bg_tan'), bg=True)

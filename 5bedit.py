@@ -10,8 +10,27 @@ screenw, screenh = lvlw * tsize, lvlh * tsize
 
 screen = pygame.display.set_mode([screenw,screenh])
 current = '/'
+bigbrush = False
 
 import tiles
+
+def bigbrush_place(mxtile, mytile, current):
+    if mxtile > 0:
+        lvl[mxtile - 1][mytile] = current
+        if mytile > 0:
+            lvl[mxtile - 1][mytile - 1] = current
+        if mytile < lvlh - 1:
+            lvl[mxtile - 1][mytile + 1] = current
+    if mytile > 0:
+        lvl[mxtile][mytile - 1] = current
+    if mxtile < lvlw - 1:
+        lvl[mxtile + 1][mytile] = current
+        if mytile > 0:
+            lvl[mxtile + 1][mytile - 1] = current
+        if mytile < lvlh - 1:
+            lvl[mxtile + 1][mytile + 1] = current
+    if mytile < lvlh - 1:
+        lvl[mxtile][mytile + 1] = current
 
 while 1:
     for event in pygame.event.get():
@@ -31,14 +50,23 @@ while 1:
             elif event.key == pygame.K_e: current = '{'
             elif event.key == pygame.K_r: current = '®'
 
+            if event.key == pygame.K_z: bigbrush = True
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_z: bigbrush = False
+
+
     mL, mM, mR = pygame.mouse.get_pressed()
     mx, my = pygame.mouse.get_pos()
     mxtile = mx // tsize
     mytile = my // tsize
     if mL:
         lvl[mxtile][mytile] = current
+        if bigbrush:
+            bigbrush_place(mxtile, mytile, current)
     elif mR:
         lvl[mxtile][mytile] = '.'
+        if bigbrush:
+            bigbrush_place(mxtile, mytile, '.')
     elif mM:
         current = lvl[mxtile][mytile]
 

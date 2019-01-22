@@ -2,11 +2,11 @@ import sys, pygame
 import os
 pygame.init()
 
-tsize = 30
+tile_size = 30
 lvlw, lvlh = 32, 18
 lvl = [['.'] * lvlh for i in range(lvlw)]
 lvl[2][1] = '/'
-screenw, screenh = lvlw * tsize, lvlh * tsize
+screenw, screenh = lvlw * tile_size, lvlh * tile_size
 
 screen = pygame.display.set_mode([screenw,screenh])
 current = '/'
@@ -57,8 +57,8 @@ while 1:
 
     mL, mM, mR = pygame.mouse.get_pressed()
     mx, my = pygame.mouse.get_pos()
-    mxtile = mx // tsize
-    mytile = my // tsize
+    mxtile = mx // tile_size
+    mytile = my // tile_size
     if mL:
         lvl[mxtile][mytile] = current
         if bigbrush:
@@ -68,7 +68,8 @@ while 1:
         if bigbrush:
             bigbrush_place(mxtile, mytile, '.')
     elif mM:
-        current = lvl[mxtile][mytile]
+        if lvl[mxtile][mytile] != '.':
+            current = lvl[mxtile][mytile]
 
     screen.fill((255, 255, 255))
     for i in range(lvlw):
@@ -101,6 +102,6 @@ while 1:
                     if not sides == corners == [True, True, True, True]: # if there are outlines
                         shadow_graphics = tiles.shadows
                         tile.blit(tiles.get_outlines(sides, corners, shadow_graphics), (0, 0))
-                screen.blit(tile, (i * tsize, j * tsize))
+                screen.blit(tile, (i * tile_size, j * tile_size))
     pygame.display.flip()
     

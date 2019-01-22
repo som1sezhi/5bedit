@@ -2,7 +2,7 @@ import pygame, os
 pygame.init()
 
 def load_sprite(name):
-    return pygame.image.load(os.path.join('data', name + '.png')).convert_alpha()
+    return pygame.image.load(os.path.join('data', 'tiles', name + '.png')).convert_alpha()
 
 outline_normal = [load_sprite('outline_corner'),
                   load_sprite('outline_1side'),

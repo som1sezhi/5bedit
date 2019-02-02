@@ -2,13 +2,14 @@ import pygame
 import sys, os
 pygame.init()
 
-tile_size = 30
-lvl_w, lvl_h = 32, 18
+tile_s = 30
+lvl_w, lvl_h = 42, 28
+lvl_wpx, lvl_hpx = lvl_w * tile_s, lvl_h * tile_s # size of lvl in pixels, not tiles
 lvl = [['.'] * lvl_h for i in range(lvl_w)]
 
 # sizes of gui elements
-stage_w = 32 * tile_size
-stage_h = 18 * tile_size
+stage_w = 32 * tile_s
+stage_h = 18 * tile_s
 statusbar_w = stage_w
 statusbar_h = 20
 
@@ -19,6 +20,7 @@ screen = pygame.display.set_mode([screen_w, screen_h])
 
 current = '/'
 bigbrush = False
+pan = False
 
 import tiles
 import gui
@@ -41,8 +43,9 @@ def bigbrush_place(mxtile, mytile, current):
     if mytile < lvl_h - 1:
         lvl[mxtile][mytile + 1] = current
 
-########## initial drawing of gui elements ##########
+########## initial drawing/setup of gui elements ##########
 stage_rect = pygame.Rect(0, 0, stage_w, stage_h)
+stage_x, stage_y = 0, 0 # pos of top left of stage in lvl (px)
 statusbar = gui.StatusBar(w=statusbar_w, h=statusbar_h, margin=2,
                           col=(100, 100, 100), textcol=(255, 255, 255),
                           font='Courier New', fontsize=12,
@@ -69,37 +72,53 @@ while 1:
             elif event.key == pygame.K_r: current = '®'
 
             if event.key == pygame.K_z: bigbrush = True
+            if event.key == pygame.K_SPACE: pan = True
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_z: bigbrush = False
+            if event.key == pygame.K_SPACE: pan = False
+        elif event.type == pygame.MOUSEMOTION:
+            if event.buttons[0] and pan:
+                stage_x -= event.rel[0]
+                stage_y -= event.rel[1]
+                if stage_x < 0: stage_x = 0
+                elif stage_x > lvl_wpx - stage_w: stage_x = lvl_wpx - stage_w
+                if stage_y < 0: stage_y = 0
+                elif stage_y > lvl_hpx - stage_h: stage_y = lvl_hpx - stage_h
 
     ##### mouse stuff #####
     mL, mM, mR = pygame.mouse.get_pressed()
     mx, my = pygame.mouse.get_pos()
-    mxtile = mx // tile_size
-    mytile = my // tile_size
+    
     if stage_rect.collidepoint(mx, my):
-        if mL:
-            lvl[mxtile][mytile] = current
-            if bigbrush:
-                bigbrush_place(mxtile, mytile, current)
-        elif mR:
-            lvl[mxtile][mytile] = '.'
-            if bigbrush:
-                bigbrush_place(mxtile, mytile, '.')
-        elif mM:
+        # derived these mathematically, don't know how they work lmoa
+        mxtile = (mx - stage_rect.left + (stage_x % tile_s)) // tile_s + (stage_x // tile_s)
+        mytile = (my - stage_rect.top + (stage_y % tile_s)) // tile_s + (stage_y // tile_s)
+        if not pan:
+            if mL:
+                lvl[mxtile][mytile] = current
+                if bigbrush:
+                    bigbrush_place(mxtile, mytile, current)
+            elif mR:
+                lvl[mxtile][mytile] = '.'
+                if bigbrush:
+                    bigbrush_place(mxtile, mytile, '.')
+        if mM:
             if lvl[mxtile][mytile] != '.':
                 current = lvl[mxtile][mytile]
 
     ##### render the stage #####
     screen.fill((255, 255, 255))
-    for i in range(lvl_w):
-        for j in range(lvl_h):
+
+    atrightedge = stage_x + stage_w >= lvl_wpx
+    atbottomedge = stage_y + stage_h >= lvl_hpx
+    for i in range(stage_x // tile_s, (stage_x + stage_w) // tile_s + (not atrightedge)):
+        for j in range(stage_y // tile_s, (stage_y + stage_h) // tile_s + (not atbottomedge)):
             cdraw = lvl[i][j] # char of tile being drawn
             if not(cdraw == '.'): # if not air...
                 tile = tiles.tiles[cdraw].sprite.copy() # get sprite
                 outline_mode = tiles.tiles[cdraw].outline_mode
 
-                ## outlines ##
+                ### outlines ###
                 if outline_mode != 0: 
                     # True if same type of tile is present on the sides/corners of current tile
                     # (ensuring valid list indexes only, returning True for OOB "tiles")
@@ -117,7 +136,7 @@ while 1:
                         outline_graphics = tiles.outline_normal if outline_mode == 1 else tiles.outline_factory
                         tile.blit(tiles.get_outlines(sides, corners, outline_graphics), (0, 0))
 
-                ## shadows ##
+                ### shadows ###
                 if tiles.tiles[cdraw].bg: # put shadows on bg tiles only
                     # True if tile in question casts shadows
                     # same sort of deal as in outlines
@@ -134,8 +153,10 @@ while 1:
                         # invert sides and corners lists to make it work with get_outlines
                         tile.blit(tiles.get_outlines([not i for i in sides], [not i for i in corners], shadow_graphics), (0, 0))
                         
-                screen.blit(tile, (i * tile_size, j * tile_size))
+                screen.blit(tile, (stage_rect.left + (i - stage_x // tile_s) * tile_s - (stage_x % tile_s),
+                                   stage_rect.top + (j - stage_y // tile_s) * tile_s - (stage_y % tile_s)))
 
-    statusbar_rect = screen.blit(statusbar.get(), (0, stage_h))
+    screen.blit(statusbar.get(), (0, stage_h))
+    
     pygame.display.flip()
     

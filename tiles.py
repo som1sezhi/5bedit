@@ -77,7 +77,7 @@ def check_shadows(ch, i_off, j_off):
         elif mode == "left" and i_off == -1: return False
         else: return True
 
-
+# for tile properties
 class Tile:
     def __init__(self, sprite, outline_mode=0, cast_shadows="none", bg=False):
         self.sprite = sprite
@@ -98,7 +98,6 @@ tiles['¼'] = Tile(load_sprite('wall_factorydarkgrey'), outline_mode=2, cast_sha
 tiles['¶'] = Tile(load_sprite('wall_factoryyellow'), outline_mode=2, cast_shadows="all")
 tiles['º'] = Tile(load_sprite('wall_factoryred'), outline_mode=2, cast_shadows="all")
 tiles['/B'] = Tile(load_sprite('wall_yellow'), outline_mode=1, cast_shadows="all")
-
 # bg
 tiles['7'] = Tile(load_sprite('bg_red'), bg=True)
 tiles['9'] = Tile(load_sprite('bg_green'), bg=True)

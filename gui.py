@@ -8,7 +8,7 @@ class StatusBar:
         self.h = h
         self.margin = margin
         self.color = col # (r, g, b)
-        self.textcol = textcol # (r, g, b)
+        self.textcolor = textcol # (r, g, b)
         self.font = pygame.font.SysFont(font, fontsize)
 
         self.update(text, rtext)
@@ -20,11 +20,11 @@ class StatusBar:
         self.surface = pygame.Surface((self.w, self.h))
         self.surface.fill(self.color)
         
-        self.text_render = self.font.render(text, True, textcol, col)
-        self.rtext_render = self.font.render(rtext, True, textcol, col)
+        self.text_render = self.font.render(self.text, True, self.textcolor, self.color)
+        self.rtext_render = self.font.render(self.rtext, True, self.textcolor, self.color)
 
         self.surface.blit(self.text_render, (self.margin, self.margin))
         self.surface.blit(self.rtext_render, (self.w - (self.margin + self.rtext_render.get_width()), self.margin))
         
-    def get_render():
+    def get(self):
         return self.surface

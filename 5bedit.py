@@ -10,7 +10,7 @@ lvl = [['.'] * lvl_h for i in range(lvl_w)]
 stage_w = 32 * tile_size
 stage_h = 18 * tile_size
 statusbar_w = stage_w
-statusbar_h = 16
+statusbar_h = 20
 
 screen_w = stage_w
 screen_h = stage_h + statusbar_h
@@ -41,6 +41,14 @@ def bigbrush_place(mxtile, mytile, current):
     if mytile < lvl_h - 1:
         lvl[mxtile][mytile + 1] = current
 
+########## initial drawing of gui elements ##########
+stage_rect = pygame.Rect(0, 0, stage_w, stage_h)
+statusbar = gui.StatusBar(w=statusbar_w, h=statusbar_h, margin=2,
+                          col=(100, 100, 100), textcol=(255, 255, 255),
+                          font='Courier New', fontsize=12,
+                          text='sup', rtext='supper')
+statusbar_rect = screen.blit(statusbar.get(), (0, stage_h))
+
 ########## draw loop ##########
 while 1:
     for event in pygame.event.get():
@@ -64,24 +72,25 @@ while 1:
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_z: bigbrush = False
 
-    ### mouse stuff ###
+    ##### mouse stuff #####
     mL, mM, mR = pygame.mouse.get_pressed()
     mx, my = pygame.mouse.get_pos()
     mxtile = mx // tile_size
     mytile = my // tile_size
-    if mL:
-        lvl[mxtile][mytile] = current
-        if bigbrush:
-            bigbrush_place(mxtile, mytile, current)
-    elif mR:
-        lvl[mxtile][mytile] = '.'
-        if bigbrush:
-            bigbrush_place(mxtile, mytile, '.')
-    elif mM:
-        if lvl[mxtile][mytile] != '.':
-            current = lvl[mxtile][mytile]
+    if stage_rect.collidepoint(mx, my):
+        if mL:
+            lvl[mxtile][mytile] = current
+            if bigbrush:
+                bigbrush_place(mxtile, mytile, current)
+        elif mR:
+            lvl[mxtile][mytile] = '.'
+            if bigbrush:
+                bigbrush_place(mxtile, mytile, '.')
+        elif mM:
+            if lvl[mxtile][mytile] != '.':
+                current = lvl[mxtile][mytile]
 
-    ### render the stage ###
+    ##### render the stage #####
     screen.fill((255, 255, 255))
     for i in range(lvl_w):
         for j in range(lvl_h):
@@ -110,19 +119,23 @@ while 1:
 
                 ## shadows ##
                 if tiles.tiles[cdraw].bg: # put shadows on bg tiles only
-                    # True 
-                    sides = [tiles.check_shadows(lvl[i][j - 1], 0, 1) if j - 1 >= 0 else True,
-                             tiles.check_shadows(lvl[i + 1][j], -1, 0) if i + 1 < lvl_w else True,
-                             tiles.check_shadows(lvl[i][j + 1], 0, -1) if j + 1 < lvl_h else True,
-                             tiles.check_shadows(lvl[i - 1][j], 1, 0) if i - 1 >= 0 else True]
-                    corners = [tiles.check_shadows(lvl[i - 1][j - 1], 1, 1) if i - 1 >= 0 and j - 1 >= 0 else True,
-                               tiles.check_shadows(lvl[i + 1][j - 1], -1, 1) if i + 1 < lvl_w and j - 1 >= 0 else True,
-                               tiles.check_shadows(lvl[i + 1][j + 1], -1, -1) if i + 1 < lvl_w and j + 1 < lvl_h else True,
-                               tiles.check_shadows(lvl[i - 1][j + 1], 1, -1) if i - 1 >= 0 and j + 1 < lvl_h else True]
-                    if not sides == corners == [True, True, True, True]: # if there are outlines
+                    # True if tile in question casts shadows
+                    # same sort of deal as in outlines
+                    sides = [tiles.check_shadows(lvl[i][j - 1], 0, 1) if j - 1 >= 0 else False,
+                             tiles.check_shadows(lvl[i + 1][j], -1, 0) if i + 1 < lvl_w else False,
+                             tiles.check_shadows(lvl[i][j + 1], 0, -1) if j + 1 < lvl_h else False,
+                             tiles.check_shadows(lvl[i - 1][j], 1, 0) if i - 1 >= 0 else False]
+                    corners = [tiles.check_shadows(lvl[i - 1][j - 1], 1, 1) if i - 1 >= 0 and j - 1 >= 0 else False,
+                               tiles.check_shadows(lvl[i + 1][j - 1], -1, 1) if i + 1 < lvl_w and j - 1 >= 0 else False,
+                               tiles.check_shadows(lvl[i + 1][j + 1], -1, -1) if i + 1 < lvl_w and j + 1 < lvl_h else False,
+                               tiles.check_shadows(lvl[i - 1][j + 1], 1, -1) if i - 1 >= 0 and j + 1 < lvl_h else False]
+                    if not sides == corners == [False, False, False, False]: # if there are outlines
                         shadow_graphics = tiles.shadows
-                        tile.blit(tiles.get_outlines(sides, corners, shadow_graphics), (0, 0))
+                        # invert sides and corners lists to make it work with get_outlines
+                        tile.blit(tiles.get_outlines([not i for i in sides], [not i for i in corners], shadow_graphics), (0, 0))
                         
                 screen.blit(tile, (i * tile_size, j * tile_size))
+
+    statusbar_rect = screen.blit(statusbar.get(), (0, stage_h))
     pygame.display.flip()
     

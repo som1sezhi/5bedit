@@ -63,18 +63,19 @@ def get_outlines(sides, corners, outline_set):
     return outlines
 
 
-# note: False means shadow is cast
+# check if given tile rep. by ch casts shadows
+# (i_off, j_off) is offset of ch FROM tile to be shadow'd
 def check_shadows(ch, i_off, j_off):
     mode = tiles[ch].cast_shadows
-    if mode == "none": return True # no shadows
-    elif mode == "all": return False # all shadows
+    if mode == "none": return False # no shadows
+    elif mode == "all": return True # all shadows
     else:
-        if  i_off != 0 and j_off != 0: return True # if corner, no shadows
-        elif mode == "sides": return False # then if sides, yes shadows
-        elif mode == "up" and j_off == -1: return False
-        elif mode == "right" and i_off == 1: return False
-        elif mode == "down" and j_off == 1: return False
-        elif mode == "left" and i_off == -1: return False
+        if  i_off != 0 and j_off != 0: return False # if corner, no shadows
+        elif mode == "sides": return True # then if sides, yes shadows
+        elif mode == "up" and j_off == -1: return True
+        elif mode == "right" and i_off == 1: return True
+        elif mode == "down" and j_off == 1: return True
+        elif mode == "left" and i_off == -1: return True
         else: return True
 
 # for tile properties

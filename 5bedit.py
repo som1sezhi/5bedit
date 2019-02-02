@@ -47,9 +47,9 @@ def bigbrush_place(mxtile, mytile, current):
 stage_rect = pygame.Rect(0, 0, stage_w, stage_h)
 stage_x, stage_y = 0, 0 # pos of top left of stage in lvl (px)
 statusbar = gui.StatusBar(w=statusbar_w, h=statusbar_h, margin=2,
-                          col=(100, 100, 100), textcol=(255, 255, 255),
-                          font='Courier New', fontsize=12,
-                          text='sup', rtext='supper')
+                          col=(80, 80, 80), textcol=(255, 255, 255),
+                          font='Courier', fontsize=14,
+                          text='current tile: \'%s\'' % current, rtext='')
 statusbar_rect = screen.blit(statusbar.get(), (0, stage_h))
 
 ########## draw loop ##########
@@ -91,8 +91,11 @@ while 1:
     
     if stage_rect.collidepoint(mx, my):
         # derived these mathematically, don't know how they work lmoa
-        mxtile = (mx - stage_rect.left + (stage_x % tile_s)) // tile_s + (stage_x // tile_s)
-        mytile = (my - stage_rect.top + (stage_y % tile_s)) // tile_s + (stage_y // tile_s)
+        mxlvl = (stage_x + mx - stage_rect.left) / tile_s
+        mylvl = (stage_y + my - stage_rect.top) / tile_s
+        mxtile = int(mxlvl // 1)
+        mytile = int(mylvl // 1)
+        
         if not pan:
             if mL:
                 lvl[mxtile][mytile] = current
@@ -105,6 +108,11 @@ while 1:
         if mM:
             if lvl[mxtile][mytile] != '.':
                 current = lvl[mxtile][mytile]
+        statusbar.rtext = 'xy: (%.2f, %.2f), tile (%d, %d)' % (mxlvl, mylvl, mxtile, mytile)
+
+    statusbar.text = 'current tile: \'%s\'' % current
+    
+    statusbar.render()
 
     ##### render the stage #####
     screen.fill((255, 255, 255))

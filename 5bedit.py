@@ -3,17 +3,19 @@ import sys, os
 pygame.init()
 
 tile_s = 30
-lvl_w, lvl_h = 42, 28
+lvl_w, lvl_h = 72, 28
 lvl_wpx, lvl_hpx = lvl_w * tile_s, lvl_h * tile_s # size of lvl in pixels, not tiles
 lvl = [['.'] * lvl_h for i in range(lvl_w)]
 
 # sizes of gui elements
 stage_w = 32 * tile_s
 stage_h = 18 * tile_s
-statusbar_w = stage_w
+tray_w = 155
+tray_h = 255
+statusbar_w = stage_w + tray_w
 statusbar_h = 20
 
-screen_w = stage_w
+screen_w = tray_w + stage_w
 screen_h = stage_h + statusbar_h
 
 screen = pygame.display.set_mode([screen_w, screen_h])
@@ -44,13 +46,14 @@ def bigbrush_place(mxtile, mytile, current):
         lvl[mxtile][mytile + 1] = current
 
 ########## initial drawing/setup of gui elements ##########
-stage_rect = pygame.Rect(0, 0, stage_w, stage_h)
+stage_rect = pygame.Rect(tray_w, 0, stage_w, stage_h)
 stage_x, stage_y = 0, 0 # pos of top left of stage in lvl (px)
 statusbar = gui.StatusBar(w=statusbar_w, h=statusbar_h, margin=2,
-                          col=(80, 80, 80), textcol=(255, 255, 255),
                           font='Courier', fontsize=14,
                           text='current tile: \'%s\'' % current, rtext='')
-statusbar_rect = screen.blit(statusbar.get(), (0, stage_h))
+statusbar_rect = screen.blit(statusbar.render(), (0, stage_h))
+tiletray = gui.tiletray
+tray_rect = screen.blit(tiletray.render(), (0, 0))
 
 ########## draw loop ##########
 while 1:
@@ -90,12 +93,10 @@ while 1:
     mx, my = pygame.mouse.get_pos()
     
     if stage_rect.collidepoint(mx, my):
-        # derived these mathematically, don't know how they work lmoa
         mxlvl = (stage_x + mx - stage_rect.left) / tile_s
         mylvl = (stage_y + my - stage_rect.top) / tile_s
         mxtile = int(mxlvl // 1)
         mytile = int(mylvl // 1)
-        
         if not pan:
             if mL:
                 lvl[mxtile][mytile] = current
@@ -108,11 +109,14 @@ while 1:
         if mM:
             if lvl[mxtile][mytile] != '.':
                 current = lvl[mxtile][mytile]
+                tiletray.set_val(current, True)
         statusbar.rtext = 'xy: (%.2f, %.2f), tile (%d, %d)' % (mxlvl, mylvl, mxtile, mytile)
+    elif tray_rect.collidepoint(mx, my):
+        if mL:
+            tiletray.mouse_select(mx - tray_rect.x, my - tray_rect.y)
+            current = tiletray.get_val()
 
     statusbar.text = 'current tile: \'%s\'' % current
-    
-    statusbar.render()
 
     ##### render the stage #####
     screen.fill((255, 255, 255))
@@ -164,7 +168,9 @@ while 1:
                 screen.blit(tile, (stage_rect.left + (i - stage_x // tile_s) * tile_s - (stage_x % tile_s),
                                    stage_rect.top + (j - stage_y // tile_s) * tile_s - (stage_y % tile_s)))
 
-    screen.blit(statusbar.get(), (0, stage_h))
+    pygame.draw.rect(screen, (90, 90, 90), (0, 0, tray_w, stage_h))
+    screen.blit(statusbar.render(), (0, stage_h))
+    screen.blit(tiletray.render(), (0, 0))
     
     pygame.display.flip()
     

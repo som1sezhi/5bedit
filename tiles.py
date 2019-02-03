@@ -80,12 +80,22 @@ def check_shadows(ch, i_off, j_off):
 
 # for tile properties
 class Tile:
-    def __init__(self, sprite, outline_mode=0, cast_shadows="none", bg=False):
+    def __init__(self, sprite, outline_mode=0, cast_shadows="none", bg=False, trayicon=None):
         self.sprite = sprite
         self.outline_mode = outline_mode
         self.cast_shadows = cast_shadows
         self.bg = bg
-        
+        if trayicon == None:
+            if outline_mode == 1:
+                self.tray_icon = sprite.copy()
+                self.tray_icon.blit(get_outlines([False]*4, [False]*4, outline_normal), (0, 0))
+            elif outline_mode == 2:
+                self.tray_icon = sprite.copy()
+                self.tray_icon.blit(get_outlines([False]*4, [False]*4, outline_factory), (0, 0))
+            else:
+                self.tray_icon = sprite
+        else:
+            self.tray_icon = trayicon
 
 tiles = {}
 tiles['.'] = Tile(None)

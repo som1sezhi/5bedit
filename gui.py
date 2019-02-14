@@ -8,6 +8,111 @@ import tiles
 def load_sprite(name):
     return pygame.image.load(os.path.join('data', 'gui', name + '.png')).convert_alpha()
 
+class Stage:
+    def __init__(self, lvl, tile_s):
+        assert all(len(i) == len(lvl[0]) for i in lvl) # assert 'rectangular' list
+        self.lvl = lvl
+        self.tile_s = tile_s
+        self.lvl_w = len(lvl)
+        self.lvl_h = len(lvl[0])
+        # stage screen is 32*18 tiles
+        self.w = 32 * tile_s
+        self.h = 18 * tile_s
+        # x, y pos of current camera pos in the level (px)
+        self.cx = 0
+        self.cy = 0
+
+        self.fullrect = pygame.Rect(0, 0, self.w, self.h)
+
+    def render_tile(self, i, j):
+        lvl = self.lvl
+        lvl_w = self.lvl_w
+        lvl_h = self.lvl_h
+        
+        cdraw = lvl[i][j] # char of this tile
+        tile = tiles.tiles[cdraw].sprite.copy() # get sprite
+        ol_mode = tiles.tiles[cdraw].outline_mode
+
+        ### outlines ###
+        if ol_mode != 0: 
+            # True if same type of tile is present on the sides/corners of current tile
+            # (ensuring valid list indexes only, returning True for OOB "tiles")
+            # order for sides is U, R, D, L
+            # order for corners is LU, RU, RD, LD
+            sides = [lvl[i][j - 1] == cdraw if j - 1 >= 0 else True,
+                     lvl[i + 1][j] == cdraw if i + 1 < lvl_w else True,
+                     lvl[i][j + 1] == cdraw if j + 1 < lvl_h else True,
+                     lvl[i - 1][j] == cdraw if i - 1 >= 0 else True]
+            corners = [lvl[i - 1][j - 1] == cdraw if i - 1 >= 0 and j - 1 >= 0 else True,
+                       lvl[i + 1][j - 1] == cdraw if i + 1 < lvl_w and j - 1 >= 0 else True,
+                       lvl[i + 1][j + 1] == cdraw if i + 1 < lvl_w and j + 1 < lvl_h else True,
+                       lvl[i - 1][j + 1] == cdraw if i - 1 >= 0 and j + 1 < lvl_h else True]
+            if not sides == corners == [True, True, True, True]: # don't bother w/ outlines if surrounded by same tile
+                ol_graphics = tiles.outline_normal if ol_mode == 1 else tiles.outline_factory
+                tile.blit(tiles.get_outlines(sides, corners, ol_graphics), (0, 0))
+
+        ### shadows (ambient occlusion) ###
+        if tiles.tiles[cdraw].bg: # put shadows on bg tiles only
+            # True if tile in question casts shadows
+            # same sort of deal as in outlines
+            chkshdw = tiles.check_shadows
+            sides = [chkshdw(lvl[i][j - 1], 0, 1) if j - 1 >= 0 else False,
+                     chkshdw(lvl[i + 1][j], -1, 0) if i + 1 < lvl_w else False,
+                     chkshdw(lvl[i][j + 1], 0, -1) if j + 1 < lvl_h else False,
+                     chkshdw(lvl[i - 1][j], 1, 0) if i - 1 >= 0 else False]
+            corners = [chkshdw(lvl[i - 1][j - 1], 1, 1) if i - 1 >= 0 and j - 1 >= 0 else False,
+                       chkshdw(lvl[i + 1][j - 1], -1, 1) if i + 1 < lvl_w and j - 1 >= 0 else False,
+                       chkshdw(lvl[i + 1][j + 1], -1, -1) if i + 1 < lvl_w and j + 1 < lvl_h else False,
+                       chkshdw(lvl[i - 1][j + 1], 1, -1) if i - 1 >= 0 and j + 1 < lvl_h else False]
+            if not sides == corners == [False, False, False, False]: # if there are outlines
+                shdw_graphics = tiles.shadows
+                # invert sides and corners lists to make it work with get_outlines
+                tile.blit(tiles.get_outlines([not i for i in sides], [not i for i in corners], shdw_graphics), (0, 0))
+        return tile
+
+    def render_part(self, rect):
+        cx = self.cx
+        cy = self.cy
+        w = self.w
+        h = self.h
+        lvl = self.lvl
+        lvl_w = self.lvl_w
+        lvl_h = self.lvl_h
+        tile_s = self.tile_s
+        render = pygame.Surface((rect.w, rect.h))
+        render.fill((255, 255, 255))
+        
+        atrightedge = cx + rect.x + rect.w >= lvl_w * tile_s
+        atbottomedge = cy + rect.y + rect.h >= lvl_h * tile_s
+        leftbound = (cx + rect.x) // tile_s ########################
+        for i in range(, (cx + rect.x + rect.w) // tile_s + (not atrightedge)):
+            for j in range((cy + rect.y) // tile_s, (cy + rect.y + rect.h) // tile_s + (not atbottomedge)):
+                if not(lvl[i][j] == '.'): # if not air...
+                    render.blit(self.render_tile(i, j), (i * tile_s - cx - rect.x,
+                                                    j * tile_s - cy - rect.y))
+        return render
+        
+    def render_full(self):
+        cx = self.cx
+        cy = self.cy
+        w = self.w
+        h = self.h
+        lvl = self.lvl
+        lvl_w = self.lvl_w
+        lvl_h = self.lvl_h
+        tile_s = self.tile_s
+        render = pygame.Surface((w, h))
+        render.fill((255, 255, 255))
+        
+        atrightedge = cx + w >= lvl_w * tile_s
+        atbottomedge = cy + h >= lvl_h * tile_s
+        for i in range(cx // tile_s, (cx + w) // tile_s + (not atrightedge)):
+            for j in range(cy // tile_s, (cy + h) // tile_s + (not atbottomedge)):
+                if not(lvl[i][j] == '.'): # if not air...
+                    render.blit(self.render_tile(i, j), ((i - cx // tile_s) * tile_s - (cx % tile_s),
+                                                    (j - cy // tile_s) * tile_s - (cy % tile_s)))
+        return render
+
 class TrayEntry:
     def __init__(self, sprite, val):
         self.sprite = sprite
@@ -29,9 +134,9 @@ class Tray:
         self.button_h = button_h
         self.cat = catlist
 
-        self.color = (90, 90, 90)
-        self.color_button = (100, 100, 100)
-        self.color_buttondown = (50, 50, 50)
+        self.color = (30, 30, 30)
+        self.color_button = (50, 50, 50)
+        self.color_buttondown = (10, 10, 10)
         self.color_selected = (255, 255, 0)
 
         self.w = 2*margin + (w_entries-1)*spacing + w_entries*entry_w
@@ -116,7 +221,7 @@ class StatusBar:
         self.w = w
         self.h = h
         self.margin = margin
-        self.color = (60, 60, 60)
+        self.color = (20, 20, 20)
         self.textcolor = (255, 255, 255)
         self.font = pygame.font.SysFont(font, fontsize)
 

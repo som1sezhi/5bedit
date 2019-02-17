@@ -84,9 +84,9 @@ class Stage:
         
         atrightedge = cx + rect.x + rect.w >= lvl_w * tile_s
         atbottomedge = cy + rect.y + rect.h >= lvl_h * tile_s
-        leftbound = (cx + rect.x) // tile_s ########################
-        for i in range(, (cx + rect.x + rect.w) // tile_s + (not atrightedge)):
-            for j in range((cy + rect.y) // tile_s, (cy + rect.y + rect.h) // tile_s + (not atbottomedge)):
+        #leftbound = (cx + rect.x) // tile_s ########################
+        for i in range(max(0, (cx+rect.x)//tile_s), min(self.lvl_w, (cx+rect.x+rect.w)//tile_s)):
+            for j in range(max(0, (cy+rect.y)//tile_s), min(self.lvl_h, (cy+rect.y+rect.h)//tile_s)):
                 if not(lvl[i][j] == '.'): # if not air...
                     render.blit(self.render_tile(i, j), (i * tile_s - cx - rect.x,
                                                     j * tile_s - cy - rect.y))

@@ -24,9 +24,11 @@ current = '/'
 
 z_down = False
 space_down = False
+activate_pan = False
 #mL, mM, mR = False
 
 updaterects = []
+stagehover_urects = []
 
 import tiles
 import gui
@@ -67,6 +69,10 @@ screen.blit(statusbar.render(), (0, stage_h))
 screen.blit(tiletray.render(), (0, 0))
 pygame.display.update()
 
+def tile_rect(i, j, rx, ry, rw, rh):
+    return pygame.Rect(i*tile_s - stage.cx + stage_rect.left + rx*tile_s,
+                       j*tile_s - stage.cy + stage_rect.top + ry*tile_s,
+                       rw*tile_s, rh*tile_s)
 
 ########## draw loop ##########
 while 1:
@@ -81,8 +87,20 @@ while 1:
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_z: z_down = False
             if event.key == pygame.K_SPACE: space_down = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if tray_rect.collidepoint(*event.pos):
+                    tiletray.mouse_select(event.pos[0] - tray_rect.x,
+                                          event.pos[1] - tray_rect.y)
+                    current = tiletray.get_val()
+                    updaterects.append(tray_rect)
+                elif stage_rect.collidepoint(*event.pos):
+                    activate_pan = True
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                activate_pan = False
         elif event.type == pygame.MOUSEMOTION:
-            if event.buttons[0] and space_down:
+            if activate_pan and space_down:
                 stage.cx -= event.rel[0]
                 stage.cy -= event.rel[1]
                 if stage.cx < 0: stage.cx = 0
@@ -91,13 +109,13 @@ while 1:
                 elif stage.cy > lvl_hpx - stage_h: stage.cy = lvl_hpx - stage_h
                 fullstagerender = True
 
-    screen.fill((255, 255, 255))
+    screen.fill((255, 0, 255))
     
     if fullstagerender:
         screen.blit(stage.render_full(), (stage_rect.x, stage_rect.y))
         updaterects.append(stage_rect)
     else:
-        ##### mouse stuff #####
+        ##### mouse dragging stuff #####
         mL, mM, mR = pygame.mouse.get_pressed()
         mx, my = pygame.mouse.get_pos()
         
@@ -106,42 +124,52 @@ while 1:
             mylvl = (stage.cy + my - stage_rect.top) / tile_s
             mxtile = int(mxlvl // 1)
             mytile = int(mylvl // 1)
+            mtile_rect = tile_rect(mxtile, mytile, 0, 0, 1, 1)
             if not space_down:
+                stage_urect = tile_rect(mxtile, mytile, -2, -2, 5, 5)
+                stage_urect_stg = stage_urect.move(-stage_rect.left, -stage_rect.top)
                 if mL:
                     lvl[mxtile][mytile] = current
                     if z_down:
                         bigbrush_place(mxtile, mytile, current)
-                    mtile_rect = pygame.Rect(mxtile*tile_s - stage.cx + stage_rect.left - 2*tile_s,
-                                             mytile*tile_s - stage.cy + stage_rect.top - 2*tile_s,
-                                             5*tile_s, 5*tile_s)
-                    mtile_rect_stg = pygame.Rect(mtile_rect.x - stage_rect.left,
-                                                   mtile_rect.y - stage_rect.top,
-                                                   5*tile_s, 5*tile_s)
-                    screen.blit(stage.render_part(mtile_rect_stg), (mtile_rect.x, mtile_rect.y))
-                    updaterects.append(mtile_rect)
+                    #screen.blit(stage.render_part(stage_urect_stg), (stage_urect.x, stage_urect.y))
+                    #updaterects.append(stage_urect)
                 elif mR:
                     lvl[mxtile][mytile] = '.'
                     if z_down:
                         bigbrush_place(mxtile, mytile, '.')
-                    mtile_rect = pygame.Rect(mxtile*tile_s - stage.cx + stage_rect.left - 2*tile_s,
-                                             mytile*tile_s - stage.cy + stage_rect.top - 2*tile_s,
-                                             5*tile_s, 5*tile_s)
-                    mtile_rect_stg = pygame.Rect(mtile_rect.x - stage_rect.left,
-                                                   mtile_rect.y - stage_rect.top,
-                                                   5*tile_s, 5*tile_s)
-                    screen.blit(stage.render_part(mtile_rect_stg), (mtile_rect.x, mtile_rect.y))
-                    updaterects.append(mtile_rect)
+                    #screen.blit(stage.render_part(stage_urect_stg), (stage_urect.x, stage_urect.y))
+                    #updaterects.append(stage_urect)
+                screen.blit(stage.render_part(stage_urect_stg), stage_urect.topleft)
+                updaterects.append(stage_urect)
+                
+                # draw + update the blue hover selection thing
+                if len(stagehover_urects) != 1:
+                    stagehover_urects = [pygame.Rect(0, 0, tile_s, tile_s)] # default
+                    
+                screen.blit(stage.render_part(stagehover_urects[0].move(-stage_rect.left, -stage_rect.top)),
+                            stagehover_urects[0].topleft)
+                if z_down:
+                    pygame.draw.rect(screen, (0, 0, 255), tile_rect(mxtile,mytile,-1,-1,3,3), 3)
+                    hover_urect = tile_rect(mxtile, mytile, -1.5, -1.5, 4, 4)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 255), mtile_rect, 3)
+                    hover_urect = tile_rect(mxtile, mytile, -0.5, -0.5, 2, 2)
+                stagehover_urects.append(hover_urect)
+                updaterects.extend(stagehover_urects)
+                del stagehover_urects[0]
+            else: # remove blue hover selection thing, maintain updating tho
+                if stagehover_urects:
+                    screen.blit(stage.render_part(stagehover_urects[0].move(-stage_rect.left, -stage_rect.top)),
+                                stagehover_urects[0].topleft)
+                    updaterects.extend(stagehover_urects)
+                    del stagehover_urects[0]
             if mM:
                 if lvl[mxtile][mytile] != '.':
                     current = lvl[mxtile][mytile]
                     tiletray.set_val(current, True)
                     updaterects.append(tray_rect)
             statusbar.rtext = 'xy: (%.2f, %.2f), tile (%d, %d)' % (mxlvl, mylvl, mxtile, mytile)
-        elif tray_rect.collidepoint(mx, my):
-            if mL:
-                tiletray.mouse_select(mx - tray_rect.x, my - tray_rect.y)
-                current = tiletray.get_val()
-                updaterects.append(tray_rect)
 
     statusbar.text = 'current tile: \'%s\'' % current
 

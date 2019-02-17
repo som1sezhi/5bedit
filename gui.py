@@ -81,12 +81,11 @@ class Stage:
         tile_s = self.tile_s
         render = pygame.Surface((rect.w, rect.h))
         render.fill((255, 255, 255))
-        
-        atrightedge = cx + rect.x + rect.w >= lvl_w * tile_s
-        atbottomedge = cy + rect.y + rect.h >= lvl_h * tile_s
-        #leftbound = (cx + rect.x) // tile_s ########################
-        for i in range(max(0, (cx+rect.x)//tile_s), min(self.lvl_w, (cx+rect.x+rect.w)//tile_s)):
-            for j in range(max(0, (cy+rect.y)//tile_s), min(self.lvl_h, (cy+rect.y+rect.h)//tile_s)):
+
+        lb, rb = max(0, (cx+rect.x)//tile_s), min(self.lvl_w, (cx+rect.x+rect.w)//tile_s + 1)
+        tb, bb = max(0, (cy+rect.y)//tile_s), min(self.lvl_h, (cy+rect.y+rect.h)//tile_s + 1)
+        for i in range(lb, rb):
+            for j in range(tb, bb):
                 if not(lvl[i][j] == '.'): # if not air...
                     render.blit(self.render_tile(i, j), (i * tile_s - cx - rect.x,
                                                     j * tile_s - cy - rect.y))

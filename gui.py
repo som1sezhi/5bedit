@@ -9,7 +9,7 @@ def load_sprite(name):
     return pygame.image.load(os.path.join('data', 'gui', name + '.png')).convert_alpha()
 
 class Stage:
-    def __init__(self, lvl, tile_s):
+    def __init__(self, lvl, bg, tile_s):
         assert all(len(i) == len(lvl[0]) for i in lvl) # assert 'rectangular' list
         self.lvl = lvl
         self.tile_s = tile_s
@@ -22,7 +22,39 @@ class Stage:
         self.cx = 0
         self.cy = 0
 
+        self.bg_unsized = tiles.bg[bg]
+        self.update_bgsize()
+        
         self.fullrect = pygame.Rect(0, 0, self.w, self.h)
+
+    def update_bgsize(self):
+        lvl_w = self.lvl_w
+        lvl_h = self.lvl_h
+        tile_s = self.tile_s
+        parallax = tile_s / 3
+        if lvl_w / 32 > lvl_h / 18:
+            bg_w = 32*tile_s+(lvl_w-32)*parallax
+            bg_uncropped = pygame.transform.smoothscale(self.bg_unsized, (int(bg_w), int(bg_w*9/16)))
+            bg = pygame.Surface((bg_w, 18*tile_s+(lvl_h-18)*parallax))
+        else:
+            bg_h = 18*tile_s+(lvl_h-18)*parallax
+            bg_uncropped = pygame.transform.smoothscale(self.bg_unsized, (int(bg_h*16/9), int(bg_h)))
+            bg = pygame.Surface((32*tile_s+(lvl_w-32)*parallax, bg_h))
+        bg_rect = pygame.Rect(0, bg_uncropped.get_height()-bg.get_height(), bg.get_width(), bg.get_height())
+        bg.blit(bg_uncropped, (0, 0), bg_rect)
+        self.bg = bg
+
+    def get_bg_area(self, x, y, w, h): # x and y are coords in-level
+        cx = self.cx
+        cy = self.cy
+        bg = self.bg
+        parallax = 1/3
+        bg_area = pygame.Surface((w, h))
+        area = pygame.Rect(int(cx*parallax + (x-cx)),
+                           int(cy*parallax + (y-cy)),
+                           w, h)
+        bg_area.blit(bg, (0, 0), area)
+        return bg_area
 
     def render_tile(self, i, j):
         lvl = self.lvl
@@ -79,8 +111,7 @@ class Stage:
         lvl_w = self.lvl_w
         lvl_h = self.lvl_h
         tile_s = self.tile_s
-        render = pygame.Surface((rect.w, rect.h))
-        render.fill((255, 255, 255))
+        render = self.get_bg_area(cx+rect.x, cy+rect.y, rect.w, rect.h)
 
         lb, rb = max(0, (cx+rect.x)//tile_s), min(self.lvl_w, (cx+rect.x+rect.w)//tile_s + 1)
         tb, bb = max(0, (cy+rect.y)//tile_s), min(self.lvl_h, (cy+rect.y+rect.h)//tile_s + 1)
@@ -100,13 +131,12 @@ class Stage:
         lvl_w = self.lvl_w
         lvl_h = self.lvl_h
         tile_s = self.tile_s
-        render = pygame.Surface((w, h))
-        render.fill((255, 255, 255))
+        render = self.get_bg_area(cx, cy, w, h)
         
-        atrightedge = cx + w >= lvl_w * tile_s
-        atbottomedge = cy + h >= lvl_h * tile_s
-        for i in range(cx // tile_s, (cx + w) // tile_s + (not atrightedge)):
-            for j in range(cy // tile_s, (cy + h) // tile_s + (not atbottomedge)):
+        lb, rb = max(0, cx//tile_s), min(lvl_w, (cx+w)//tile_s + 1)
+        tb, bb = max(0, cy//tile_s), min(lvl_h, (cy+h)//tile_s + 1)
+        for i in range(lb, rb):
+            for j in range(tb, bb):
                 if not(lvl[i][j] == '.'): # if not air...
                     render.blit(self.render_tile(i, j), ((i - cx // tile_s) * tile_s - (cx % tile_s),
                                                     (j - cy // tile_s) * tile_s - (cy % tile_s)))

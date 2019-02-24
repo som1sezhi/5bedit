@@ -4,6 +4,10 @@ pygame.init()
 def load_sprite(name):
     return pygame.image.load(os.path.join('data', 'tiles', name + '.png')).convert_alpha()
 
+def load_bg(name):
+    # todo: check if you can also just use convert()
+    return pygame.image.load(os.path.join('data', 'bg', name + '.png')).convert()
+
 outline_normal = [load_sprite('outline_corner'),
                   load_sprite('outline_1side'),
                   load_sprite('outline_2sides'),
@@ -114,3 +118,6 @@ tiles['7'] = Tile(load_sprite('bg_red'), bg=True)
 tiles['9'] = Tile(load_sprite('bg_green'), bg=True)
 tiles['{'] = Tile(load_sprite('bg_purple'), bg=True)
 tiles['®'] = Tile(load_sprite('bg_tan'), bg=True)
+
+bg = {}
+bg[0] = load_bg('0')

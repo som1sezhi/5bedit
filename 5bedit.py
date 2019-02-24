@@ -3,7 +3,7 @@ import sys, os
 pygame.init()
 
 tile_s = 30 # size of tile (px)
-lvl_w, lvl_h = 64, 36 # size of lvl
+lvl_w, lvl_h = 64, 18 # size of lvl
 lvl_wpx, lvl_hpx = lvl_w * tile_s, lvl_h * tile_s # size of lvl in px, not tiles
 lvl = [['.'] * lvl_h for i in range(lvl_w)]
 

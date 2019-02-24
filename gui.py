@@ -40,7 +40,7 @@ class Stage:
             bg_h = 18*tile_s+(lvl_h-18)*parallax
             bg_uncropped = pygame.transform.smoothscale(self.bg_unsized, (int(bg_h*16/9), int(bg_h)))
             bg = pygame.Surface((32*tile_s+(lvl_w-32)*parallax, bg_h))
-        bg_rect = pygame.Rect(0, bg_uncropped.get_height()-bg.get_height(), bg.get_width(), bg.get_height())
+        bg_rect = pygame.Rect(0, (bg_uncropped.get_height()-bg.get_height()) // 2, bg.get_width(), bg.get_height())
         bg.blit(bg_uncropped, (0, 0), bg_rect)
         self.bg = bg
 

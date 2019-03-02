@@ -222,8 +222,7 @@ class Tray:
                     self.curr_cat = (mx - margin) // (self.button_w + self.spacing)
                     
             # tray of entries
-            #elif my > (2*margin + self.button_h):
-            else:
+            elif my >= (2*margin + self.button_h):
                 # not in the spaces?
                 if ((mx - margin) % (self.entry_w + self.spacing) < self.entry_w and
                     (my - 2*margin - self.button_h) % (self.entry_h + self.spacing) < self.entry_h):
@@ -271,16 +270,22 @@ class StatusBar:
 
 tl_walls = ['/','8','w','€','²','¼','¶','º','/B']
 tl_bg = ['7','9','{','®']
+tl_hazards = ['0', '1', '2', '3']
+tl_interact = [':']
 def get_tile(ch):
     return TrayEntry(tiles.tiles[ch].tray_icon, ch)
 el_walls = list(map(get_tile, tl_walls))
 el_bg = list(map(get_tile, tl_bg))
+el_hazards = list(map(get_tile, tl_hazards))
+el_interact = list(map(get_tile, tl_interact))
 c_walls = TrayCategory(el_walls, load_sprite('icon_walls'), 'Walls')
 c_bg = TrayCategory(el_bg, load_sprite('icon_bg'), 'BG')
+c_hazards = TrayCategory(el_hazards, load_sprite('icon_hazards'), 'BG')
+c_interact = TrayCategory(el_interact, load_sprite('icon_interact'), 'BG')
 tiletray = Tray(w_entries=4, h_entries=6,
                 entry_w=30, entry_h=30,
                 margin=10, spacing=5,
                 button_h=21,
-                catlist=[c_walls, c_bg])
+                catlist=[c_walls, c_bg, c_hazards, c_interact])
 if __name__ == '__main__':
     print(tiletray.w, tiletray.h)

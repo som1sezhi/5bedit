@@ -3,7 +3,7 @@ import sys, os
 pygame.init()
 
 tile_s = 30 # size of tile (px)
-lvl_w, lvl_h = 64, 18 # size of lvl
+lvl_w, lvl_h = 64, 36 # size of lvl
 lvl_wpx, lvl_hpx = lvl_w * tile_s, lvl_h * tile_s # size of lvl in px, not tiles
 lvl = [['.'] * lvl_h for i in range(lvl_w)]
 
@@ -20,6 +20,7 @@ screen_w = tray_w + stage_w
 screen_h = stage_h + statusbar_h
 screen = pygame.display.set_mode([screen_w, screen_h])
 
+windowactive = True # false if window is minimized
 current = '/'
 z_down = False
 space_down = False
@@ -70,6 +71,7 @@ def bigbrush_place(mxtile, mytile, current):
             lvl[mxtile + 1][mytile + 1] = current
     if mytile < lvl_h - 1:
         lvl[mxtile][mytile + 1] = current
+
 # rect corresponding to tiles in the level
 def tile_rect(i, j, rx, ry, rw, rh):
     return pygame.Rect(i*tile_s - stage.cx + stage_rect.left + rx*tile_s,
@@ -117,6 +119,12 @@ while 1:
     # default background colour
     # if you see magenta peeking out, something's gone wrong
     screen.fill((255, 0, 255))
+
+    # if window was just unminimized, draw the entire thing again
+    if windowactive != pygame.display.get_active():
+        if not windowactive:
+            fullstagerender = True
+        windowactive = pygame.display.get_active()
 
     # if in the process of panning, update the entire stage screen
     # dont bother checking for interactivity

@@ -84,7 +84,7 @@ def check_shadows(ch, i_off, j_off):
 
 # for tile properties
 class Tile:
-    def __init__(self, sprite, outline_mode=0, cast_shadows="none", bg=False, trayicon=None):
+    def __init__(self, sprite, outline_mode=0, cast_shadows="none", bg=False, trayicon=None, origin=[0, 0]):
         self.sprite = sprite
         self.outline_mode = outline_mode
         self.cast_shadows = cast_shadows
@@ -100,6 +100,7 @@ class Tile:
                 self.tray_icon = sprite
         else:
             self.tray_icon = trayicon
+        self.origin = origin
 
 tiles = {}
 tiles['.'] = Tile(None)
@@ -118,6 +119,19 @@ tiles['7'] = Tile(load_sprite('bg_red'), bg=True)
 tiles['9'] = Tile(load_sprite('bg_green'), bg=True)
 tiles['{'] = Tile(load_sprite('bg_purple'), bg=True)
 tiles['®'] = Tile(load_sprite('bg_tan'), bg=True)
+# hazards
+tiles['0'] = Tile(load_sprite('spike_grey'), cast_shadows="all")
+tiles['1'] = Tile(pygame.transform.rotate(tiles['0'].sprite, 180), cast_shadows="all")
+tiles['2'] = Tile(pygame.transform.rotate(tiles['0'].sprite, 90), cast_shadows="all")
+tiles['3'] = Tile(pygame.transform.rotate(tiles['0'].sprite, -90), cast_shadows="all")
+# interactive
+tiles['Q'] = Tile(load_sprite('lever_yellow'), origin=[4, 0])
+tiles[':'] = Tile(load_sprite('wintoken'))
 
 bg = {}
 bg[0] = load_bg('0')
+bg[2] = load_bg('2')
+bg[3] = load_bg('3')
+bg[4] = load_bg('4')
+bg[9] = load_bg('9')
+bg[10] = load_bg('10')

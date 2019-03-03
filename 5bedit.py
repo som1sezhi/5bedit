@@ -32,6 +32,7 @@ stagehover_urects = []
 
 import tiles
 import gui
+import saveload
 
 ########## initial drawing/setup of gui elements ##########
 pygame.display.set_caption('5bedit')
@@ -88,6 +89,7 @@ while 1:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_z: z_down = True
             if event.key == pygame.K_SPACE: space_down = True
+            if event.key == pygame.K_s: saveload.save(lvl)
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_z: z_down = False
             if event.key == pygame.K_SPACE: space_down = False

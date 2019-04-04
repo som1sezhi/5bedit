@@ -9,9 +9,10 @@ def load_sprite(name):
     return pygame.image.load(os.path.join('data', 'gui', name + '.png')).convert_alpha()
 
 class Stage:
-    def __init__(self, lvl, bg, tile_s):
+    def __init__(self, lvl, lvloverlap, bg, tile_s):
         assert all(len(i) == len(lvl[0]) for i in lvl) # assert 'rectangular' list
         self.lvl = lvl
+        self.lvloverlap = lvloverlap
         self.tile_s = tile_s
         self.lvl_w = len(lvl)
         self.lvl_h = len(lvl[0])
@@ -62,7 +63,12 @@ class Stage:
         lvl_h = self.lvl_h
         
         cdraw = lvl[i][j] # char of this tile
-        tile = tiles.tiles[cdraw].sprite.copy() # get sprite
+        if tiles.tiles[cdraw].origin != (0,0):
+            tile = pygame.Surface((self.tile_s, self.tile_s), pygame.SRCALPHA)
+            ox, oy = tiles.tiles[cdraw].origin
+            tile.blit(tiles.tiles[cdraw].sprite, (-ox, -oy))
+        else:
+            tile = tiles.tiles[cdraw].sprite.copy() # get sprite
         ol_mode = tiles.tiles[cdraw].outline_mode
 
         ### outlines ###
@@ -80,10 +86,10 @@ class Stage:
                        lvl[i + 1][j + 1] == cdraw if i + 1 < lvl_w and j + 1 < lvl_h else True,
                        lvl[i - 1][j + 1] == cdraw if i - 1 >= 0 and j + 1 < lvl_h else True]
             if not sides == corners == [True, True, True, True]: # don't bother w/ outlines if surrounded by same tile
-                ol_graphics = tiles.outline_normal if ol_mode == 1 else tiles.outline_factory
-                tile.blit(tiles.get_outlines(sides, corners, ol_graphics), (0, 0))
+                olset = tiles.olset_normal if ol_mode == 1 else tiles.olset_factory
+                tile.blit(tiles.get_outlines(sides, corners, olset), (0, 0))
 
-        ### shadows (ambient occlusion) ###
+        ### shadows ###
         if tiles.tiles[cdraw].bg: # put shadows on bg tiles only
             # True if tile in question casts shadows
             # same sort of deal as in outlines
@@ -91,15 +97,23 @@ class Stage:
             sides = [chkshdw(lvl[i][j - 1], 0, 1) if j - 1 >= 0 else False,
                      chkshdw(lvl[i + 1][j], -1, 0) if i + 1 < lvl_w else False,
                      chkshdw(lvl[i][j + 1], 0, -1) if j + 1 < lvl_h else False,
-                     chkshdw(lvl[i - 1][j], 1, 0) if i - 1 >= 0 else False]
+                     chkshdw(lvl[i - 1][j],1, 0) if i - 1 >= 0 else False]
             corners = [chkshdw(lvl[i - 1][j - 1], 1, 1) if i - 1 >= 0 and j - 1 >= 0 else False,
                        chkshdw(lvl[i + 1][j - 1], -1, 1) if i + 1 < lvl_w and j - 1 >= 0 else False,
                        chkshdw(lvl[i + 1][j + 1], -1, -1) if i + 1 < lvl_w and j + 1 < lvl_h else False,
                        chkshdw(lvl[i - 1][j + 1], 1, -1) if i - 1 >= 0 and j + 1 < lvl_h else False]
             if not sides == corners == [False, False, False, False]: # if there are outlines
-                shdw_graphics = tiles.shadows
+                shdwset = tiles.olset_shadows
                 # invert sides and corners lists to make it work with get_outlines
-                tile.blit(tiles.get_outlines([not i for i in sides], [not i for i in corners], shdw_graphics), (0, 0))
+                tile.blit(tiles.get_outlines([not i for i in sides], [not i for i in corners], shdwset), (0, 0))
+
+        ### parts of other tiles overlapping this one ###
+        if self.lvloverlap[i][j]:
+            for xoff, yoff in self.lvloverlap[i][j]:
+                tileoverlay = tiles.tiles[self.lvloverlap[i][j][(xoff, yoff)]]
+                xoff_px = -tileoverlay.origin[0] - xoff*self.tile_s
+                yoff_px = -tileoverlay.origin[1] - yoff*self.tile_s
+                tile.blit(tileoverlay.sprite, (xoff_px, yoff_px))
         return tile
 
     def render_part(self, rect):
@@ -108,6 +122,7 @@ class Stage:
         w = self.w
         h = self.h
         lvl = self.lvl
+        lvloverlap = self.lvloverlap
         lvl_w = self.lvl_w
         lvl_h = self.lvl_h
         tile_s = self.tile_s
@@ -117,7 +132,7 @@ class Stage:
         tb, bb = max(0, (cy+rect.y)//tile_s), min(self.lvl_h, (cy+rect.y+rect.h)//tile_s + 1)
         for i in range(lb, rb):
             for j in range(tb, bb):
-                if not(lvl[i][j] == '.'): # if not air...
+                if (lvl[i][j] != '.') or lvloverlap[i][j]: # if not air or there's smth overlapping
                     render.blit(self.render_tile(i, j), (i * tile_s - cx - rect.x,
                                                     j * tile_s - cy - rect.y))
         return render
@@ -128,6 +143,7 @@ class Stage:
         w = self.w
         h = self.h
         lvl = self.lvl
+        lvloverlap = self.lvloverlap
         lvl_w = self.lvl_w
         lvl_h = self.lvl_h
         tile_s = self.tile_s
@@ -137,7 +153,7 @@ class Stage:
         tb, bb = max(0, cy//tile_s), min(lvl_h, (cy+h)//tile_s + 1)
         for i in range(lb, rb):
             for j in range(tb, bb):
-                if not(lvl[i][j] == '.'): # if not air...
+                if (lvl[i][j] != '.') or lvloverlap[i][j]: # if not air or there's smth overlapping
                     render.blit(self.render_tile(i, j), ((i - cx // tile_s) * tile_s - (cx % tile_s),
                                                     (j - cy // tile_s) * tile_s - (cy % tile_s)))
         return render
@@ -271,7 +287,7 @@ class StatusBar:
 tl_walls = ['/','8','w','€','²','¼','¶','º','/B']
 tl_bg = ['7','9','{','®']
 tl_hazards = ['0', '1', '2', '3']
-tl_interact = [':']
+tl_interact = ['Q', ':']
 def get_tile(ch):
     return TrayEntry(tiles.tiles[ch].tray_icon, ch)
 el_walls = list(map(get_tile, tl_walls))

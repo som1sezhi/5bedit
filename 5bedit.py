@@ -5,7 +5,8 @@ pygame.init()
 tile_s = 30 # size of tile (px)
 lvl_w, lvl_h = 64, 36 # size of lvl
 lvl_wpx, lvl_hpx = lvl_w * tile_s, lvl_h * tile_s # size of lvl in px, not tiles
-lvl = [['.'] * lvl_h for i in range(lvl_w)]
+lvl = [['.'] * lvl_h for _ in range(lvl_w)]
+lvloverlap = [[{} for _ in range(lvl_h)] for _ in range(lvl_w)]
 
 # sizes of gui elements
 stage_w = 32 * tile_s
@@ -38,7 +39,7 @@ import saveload
 pygame.display.set_caption('5bedit')
 pygame.display.set_icon(gui.load_sprite('windowicon'))
 
-stage = gui.Stage(lvl, 0, tile_s)
+stage = gui.Stage(lvl, lvloverlap, 0, tile_s)
 stage_rect = pygame.Rect(tray_w, 0, stage_w, stage_h)
 
 statusbar = gui.StatusBar(w=statusbar_w, h=statusbar_h, margin=2,
@@ -55,29 +56,88 @@ screen.blit(statusbar.render(), (0, stage_h))
 screen.blit(tiletray.render(), (0, 0))
 pygame.display.update()
 
-def bigbrush_place(mxtile, mytile, current):
-    if mxtile > 0:
-        lvl[mxtile - 1][mytile] = current
-        if mytile > 0:
-            lvl[mxtile - 1][mytile - 1] = current
-        if mytile < lvl_h - 1:
-            lvl[mxtile - 1][mytile + 1] = current
-    if mytile > 0:
-        lvl[mxtile][mytile - 1] = current
-    if mxtile < lvl_w - 1:
-        lvl[mxtile + 1][mytile] = current
-        if mytile > 0:
-            lvl[mxtile + 1][mytile - 1] = current
-        if mytile < lvl_h - 1:
-            lvl[mxtile + 1][mytile + 1] = current
-    if mytile < lvl_h - 1:
-        lvl[mxtile][mytile + 1] = current
-
 # rect corresponding to tiles in the level
 def tile_rect(i, j, rx, ry, rw, rh):
     return pygame.Rect(i*tile_s - stage.cx + stage_rect.left + rx*tile_s,
                        j*tile_s - stage.cy + stage_rect.top + ry*tile_s,
                        rw*tile_s, rh*tile_s)
+
+# place overlapping bits of tile
+def place_overlap(i, j, c):
+    ox, oy = tiles.tiles[c].origin
+    sx, sy = tiles.tiles[c].sprite.get_size()
+    lbound = ubound = 0
+    rbound = dbound = 1
+    if ox != 0:
+        lbound = (-ox) // tile_s
+        rbound = (sx-ox) // tile_s + 1
+    else:
+        lbound, rbound = 0, 1
+    lb, rb = max(0, i+lbound), min(lvl_w, i+rbound)
+    if oy != 0:
+        ubound = (-oy) // tile_s
+        dbound = (sy-oy) // tile_s + 1
+    else:
+        ubound, dbound = 0, 1
+    ub, db = max(0, j+ubound), min(lvl_h, j+dbound)
+    for x in range(lb, rb):
+        for y in range(ub, db):
+            if (x, y) != (i, j):
+                lvloverlap[x][y][(x-i, y-j)] = c
+                #print('placed (%d, %d) [%s] at %d, %d' % (x-i, y-j, c, x, y))
+    #print('end func call')
+
+# delete overlapping bits of tile
+def del_overlap(i, j, c):
+    ox, oy = tiles.tiles[c].origin
+    sx, sy = tiles.tiles[c].sprite.get_size()
+    lbound = ubound = 0
+    rbound = dbound = 1
+    if ox != 0:
+        lbound = (-ox) // tile_s
+        rbound = (sx-ox) // tile_s + 1
+    else:
+        lbound, rbound = 0, 1
+    lb, rb = max(0, i+lbound), min(lvl_w, i+rbound)
+    if oy != 0:
+        ubound = (-oy) // tile_s
+        dbound = (sy-oy) // tile_s + 1
+    else:
+        ubound, dbound = 0, 1
+    ub, db = max(0, j+ubound), min(lvl_h, j+dbound)
+    for x in range(lb, rb):
+        for y in range(ub, db):
+            if (x, y) != (i, j):
+                del lvloverlap[x][y][(x-i, y-j)]
+                #print('deleted (%d, %d) [%s] at %d, %d' % (x-i, y-j, c, x, y))
+    #print('end func call')
+        
+def place_tile(i, j, c):
+    # if overwriting tiles, remove the overlap they make
+    if tiles.tiles[lvl[i][j]].origin != (0, 0):
+        del_overlap(i, j, lvl[i][j])
+    lvl[i][j] = c
+    # place overlap
+    if tiles.tiles[c].origin != (0,0):
+        place_overlap(i, j, c)
+    
+def bigbrush_place(mxtile, mytile, current):
+    if mxtile > 0: # L
+        place_tile(mxtile - 1, mytile, current)
+        if mytile > 0: # LU
+            place_tile(mxtile - 1, mytile - 1, current)
+        if mytile < lvl_h - 1: # LD
+            place_tile(mxtile - 1, mytile + 1, current)
+    if mytile > 0: # U
+        place_tile(mxtile, mytile - 1, current)
+    if mxtile < lvl_w - 1: # R
+        place_tile(mxtile + 1, mytile, current)
+        if mytile > 0: # RU
+            place_tile(mxtile + 1, mytile - 1, current)
+        if mytile < lvl_h - 1: # RD
+            place_tile(mxtile + 1, mytile + 1, current)
+    if mytile < lvl_h - 1: # D
+        place_tile(mxtile, mytile + 1, current)
 
 ########## draw loop ##########
 while 1:
@@ -152,12 +212,12 @@ while 1:
                 stage_urect_stg = stage_urect.move(-stage_rect.left, -stage_rect.top)
                 # paint tiles
                 if mL:
-                    lvl[mxtile][mytile] = current
+                    place_tile(mxtile, mytile, current) 
                     if z_down:
                         bigbrush_place(mxtile, mytile, current)
                 # erase tiles
                 elif mR:
-                    lvl[mxtile][mytile] = '.'
+                    place_tile(mxtile, mytile, '.')
                     if z_down:
                         bigbrush_place(mxtile, mytile, '.')
                 screen.blit(stage.render_part(stage_urect_stg), stage_urect.topleft)

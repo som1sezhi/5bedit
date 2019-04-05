@@ -91,7 +91,19 @@ def check_shadows(ch, i_off, j_off):
         elif mode == "right" and i_off == 1: return True
         elif mode == "down" and j_off == 1: return True
         elif mode == "left" and i_off == -1: return True
-        else: return True
+        else: return False
+
+def resize_icon(sprite):
+    w, h = sprite.get_size()
+    if w > h:
+        ws, hs = 30, round(30 * h/w)
+    else:
+        ws, hs = round(30 * w/h), 30
+    # center the icon
+    icon = pygame.Surface((30, 30), pygame.SRCALPHA)
+    icon.blit(pygame.transform.scale(sprite, (ws, hs)),
+                        ((30-ws)//2, (30-hs)//2))
+    return icon
 
 # for tile properties
 class Tile:
@@ -113,21 +125,17 @@ class Tile:
             elif outline_mode == 2:
                 self.tray_icon = sprite.copy()
                 self.tray_icon.blit(get_outlines([False]*4, [False]*4, olset_factory), (0, 0))
-            elif sprite.get_size() != (30, 30):
-                w, h = sprite.get_size()
-                if w > h:
-                    ws, hs = 30, round(30 * h/w)
-                else:
-                    ws, hs = round(30 * w/h), 30
-                self.tray_icon = pygame.transform.scale(sprite, (ws, hs))
             else:
                 self.tray_icon = sprite
+        elif trayicon == "resize":
+              self.tray_icon = resize_icon(sprite)
         else:
-            self.tray_icon = trayicon
+              self.tray_icon = trayicon
         self.origin = origin
 
 tiles = {}
 tiles['.'] = Tile(pygame.Surface((30, 30), pygame.SRCALPHA))
+
 # walls
 tiles['/'] = Tile(load_sprite('wall_red'), outline_mode=1, cast_shadows="all")
 tiles['8'] = Tile(load_sprite('wall_green'), outline_mode=1, cast_shadows="all")
@@ -138,20 +146,39 @@ tiles['¼'] = Tile(load_sprite('wall_factorydarkgrey'), outline_mode=2, cast_sha
 tiles['¶'] = Tile(load_sprite('wall_factoryyellow'), outline_mode=2, cast_shadows="all")
 tiles['º'] = Tile(load_sprite('wall_factoryred'), outline_mode=2, cast_shadows="all")
 tiles['/B'] = Tile(load_sprite('wall_yellow'), outline_mode=1, cast_shadows="all")
+
 # bg
 tiles['7'] = Tile(load_sprite('bg_red'), bg=True)
 tiles['9'] = Tile(load_sprite('bg_green'), bg=True)
 tiles['{'] = Tile(load_sprite('bg_purple'), bg=True)
 tiles['®'] = Tile(load_sprite('bg_tan'), bg=True)
+tiles['5'] = Tile(load_sprite('tree_e'), trayicon="resize", origin=(77, 184))
+
 # hazards
 tiles['0'] = Tile(load_sprite('spike_grey'), cast_shadows="all")
 tiles['1'] = Tile(pygame.transform.rotate(tiles['0'].sprite, 180), cast_shadows="all")
-tiles['2'] = Tile(pygame.transform.rotate(tiles['0'].sprite, 90), cast_shadows="all")
-tiles['3'] = Tile(pygame.transform.rotate(tiles['0'].sprite, -90), cast_shadows="all")
-# interactive
-tiles['4'] = Tile(load_sprite('exit'), origin=(30, 90))
-tiles['Q'] = Tile(load_sprite('lever_yellow'), origin=(4, 0))
+tiles['2'] = Tile(load_sprite('spike_grey_right'), cast_shadows="all")
+tiles['3'] = Tile(pygame.transform.rotate(tiles['2'].sprite, 180), cast_shadows="all")
+tiles['A'] = Tile(load_sprite('spike_black'), cast_shadows="all")
+tiles['B'] = Tile(pygame.transform.rotate(tiles['A'].sprite, 180), cast_shadows="all")
+tiles['C'] = Tile(load_sprite('spike_black_right'), cast_shadows="all")
+tiles['D'] = Tile(pygame.transform.rotate(tiles['C'].sprite, 180), cast_shadows="all")
+tiles['v'] = Tile(load_sprite('spike_ball'), cast_shadows="all")
+tiles['='] = Tile(load_sprite('heater'), bg=True)
+
+# interactive/special
+tiles['4'] = Tile(load_sprite('exit'), bg=True, trayicon="resize", origin=(30, 90))
 tiles[':'] = Tile(load_sprite('wintoken'))
+
+tiles[';'] = Tile(load_sprite('jumppad'), cast_shadows="all")
+tiles['<'] = Tile(load_sprite('conveyor'), cast_shadows="sides")
+tiles['>'] = Tile(pygame.transform.flip(tiles['<'].sprite, True, False), cast_shadows="sides")
+tiles['@'] = Tile(load_sprite('oneway'), cast_shadows="up")
+tiles['r'] = Tile(pygame.transform.rotate(tiles['@'].sprite, 90), cast_shadows="left")
+tiles['s'] = Tile(pygame.transform.rotate(tiles['@'].sprite, 180), cast_shadows="down")
+tiles['e'] = Tile(load_sprite('oneway_rock'), cast_shadows="up")
+
+tiles['Q'] = Tile(load_sprite('lever_yellow'), origin=(4, 0))
 
 bg = {}
 bg[0] = load_bg('0')

@@ -89,8 +89,18 @@ class Stage:
                 olset = tiles.olset_normal if ol_mode == 1 else tiles.olset_factory
                 tile.blit(tiles.get_outlines(sides, corners, olset), (0, 0))
 
+        ### parts of other tiles overlapping this one ###
+        shadow_from_overlap = False
+        if self.lvloverlap[i][j]:
+            for xoff, yoff in self.lvloverlap[i][j]:
+                tileoverlap = tiles.tiles[self.lvloverlap[i][j][(xoff, yoff)]]
+                xoff_px = -tileoverlap.origin[0] - xoff*self.tile_s
+                yoff_px = -tileoverlap.origin[1] - yoff*self.tile_s
+                tile.blit(tileoverlap.sprite, (xoff_px, yoff_px))
+                shadow_from_overlap = tileoverlap.bg
+
         ### shadows ###
-        if tiles.tiles[cdraw].bg: # put shadows on bg tiles only
+        if tiles.tiles[cdraw].bg or shadow_from_overlap: # put shadows on bg tiles only (incl overlap bg)
             # True if tile in question casts shadows
             # same sort of deal as in outlines
             chkshdw = tiles.check_shadows
@@ -106,14 +116,7 @@ class Stage:
                 shdwset = tiles.olset_shadows
                 # invert sides and corners lists to make it work with get_outlines
                 tile.blit(tiles.get_outlines([not i for i in sides], [not i for i in corners], shdwset), (0, 0))
-
-        ### parts of other tiles overlapping this one ###
-        if self.lvloverlap[i][j]:
-            for xoff, yoff in self.lvloverlap[i][j]:
-                tileoverlay = tiles.tiles[self.lvloverlap[i][j][(xoff, yoff)]]
-                xoff_px = -tileoverlay.origin[0] - xoff*self.tile_s
-                yoff_px = -tileoverlay.origin[1] - yoff*self.tile_s
-                tile.blit(tileoverlay.sprite, (xoff_px, yoff_px))
+        
         return tile
 
     def render_part(self, rect):
@@ -179,8 +182,8 @@ class Tray:
         self.button_h = button_h
         self.cat = catlist
 
-        self.color = (30, 30, 30)
-        self.color_button = (50, 50, 50)
+        self.color = (37, 37, 37)
+        self.color_button = (45, 45, 45)
         self.color_buttondown = (10, 10, 10)
         self.color_selected = (255, 255, 0)
 
@@ -284,10 +287,27 @@ class StatusBar:
         render.blit(rtext_render, (self.w - (self.margin + rtext_render.get_width()), self.margin))
         return render
 
-tl_walls = ['/','8','w','€','²','¼','¶','º','/B']
-tl_bg = ['7','9','{','®']
-tl_hazards = ['0', '1', '2', '3']
-tl_interact = ['4', 'Q', ':']
+##tl_walls = ['/','8','w','€','²','¼','¶','º','/B']
+##tl_bg = ['7','9','{','®',
+##         '5']
+##tl_hazards = ['0', '1', '2', '3']
+##tl_interact = ['4', ';', 'Q', ':']
+tl_walls = []
+tl_bg = []
+tl_hazards = []
+tl_interact = []
+
+# feed tiles (in order of being defined) into categories automatically so i dont have to
+cu = '' # which category to stick them into
+for ch in tiles.tiles:
+    if ch == '/': cu = 'walls'
+    elif ch == '7': cu = 'bg'
+    elif ch == '0': cu = 'hazards'
+    elif ch == '4': cu = 'interact'
+    if cu == 'walls': tl_walls.append(ch)
+    elif cu == 'bg': tl_bg.append(ch)
+    elif cu == 'hazards': tl_hazards.append(ch)
+    elif cu == 'interact': tl_interact.append(ch)
 def get_tile(ch):
     return TrayEntry(tiles.tiles[ch].tray_icon, ch)
 el_walls = list(map(get_tile, tl_walls))

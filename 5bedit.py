@@ -51,7 +51,7 @@ tiletray = gui.tiletray
 tray_rect = screen.blit(tiletray.render(), (0, 0))
 
 screen.blit(stage.render_full(), (stage_rect.x, stage_rect.y))
-pygame.draw.rect(screen, (30, 30, 30), (0, 0, tray_w, stage_h))
+pygame.draw.rect(screen, (37, 37, 37), (0, 0, tray_w, stage_h))
 screen.blit(statusbar.render(), (0, stage_h))
 screen.blit(tiletray.render(), (0, 0))
 pygame.display.update()
@@ -63,56 +63,38 @@ def tile_rect(i, j, rx, ry, rw, rh):
                        rw*tile_s, rh*tile_s)
 
 # place overlapping bits of tile
-def place_overlap(i, j, c):
+def place_overlap(i, j, c, delete=False):
     ox, oy = tiles.tiles[c].origin
     sx, sy = tiles.tiles[c].sprite.get_size()
     lbound = ubound = 0
     rbound = dbound = 1
     if ox != 0:
         lbound = (-ox) // tile_s
-        rbound = (sx-ox) // tile_s + 1
+        rbound = (sx-ox) // tile_s + ((sx-ox) % tile_s != 0)
     else:
         lbound, rbound = 0, 1
     lb, rb = max(0, i+lbound), min(lvl_w, i+rbound)
     if oy != 0:
         ubound = (-oy) // tile_s
-        dbound = (sy-oy) // tile_s + 1
+        dbound = (sy-oy) // tile_s + ((sy-oy) % tile_s != 0)
     else:
         ubound, dbound = 0, 1
     ub, db = max(0, j+ubound), min(lvl_h, j+dbound)
     for x in range(lb, rb):
         for y in range(ub, db):
             if (x, y) != (i, j):
-                lvloverlap[x][y][(x-i, y-j)] = c
-                #print('placed (%d, %d) [%s] at %d, %d' % (x-i, y-j, c, x, y))
+                if delete:
+                    del lvloverlap[x][y][(x-i, y-j)]
+                    #print('deleted (%d, %d) [%s] at %d, %d' % (x-i, y-j, c, x, y))
+                else: # place
+                    lvloverlap[x][y][(x-i, y-j)] = c
+                    #print('placed (%d, %d) [%s] at %d, %d' % (x-i, y-j, c, x, y))
     #print('end func call')
     return tile_rect(i, j, lb-i, ub-j, rb-lb, db-ub)
 
 # delete overlapping bits of tile
 def del_overlap(i, j, c):
-    ox, oy = tiles.tiles[c].origin
-    sx, sy = tiles.tiles[c].sprite.get_size()
-    lbound = ubound = 0
-    rbound = dbound = 1
-    if ox != 0:
-        lbound = (-ox) // tile_s
-        rbound = (sx-ox) // tile_s + 1
-    else:
-        lbound, rbound = 0, 1
-    lb, rb = max(0, i+lbound), min(lvl_w, i+rbound)
-    if oy != 0:
-        ubound = (-oy) // tile_s
-        dbound = (sy-oy) // tile_s + 1
-    else:
-        ubound, dbound = 0, 1
-    ub, db = max(0, j+ubound), min(lvl_h, j+dbound)
-    for x in range(lb, rb):
-        for y in range(ub, db):
-            if (x, y) != (i, j):
-                del lvloverlap[x][y][(x-i, y-j)]
-                #print('deleted (%d, %d) [%s] at %d, %d' % (x-i, y-j, c, x, y))
-    #print('end func call')
-    return tile_rect(i, j, lb-i, ub-j, rb-lb, db-ub)
+    return place_overlap(i, j, c, delete=True)
         
 def place_tile(i, j, c):
     ur = [] # update rects
@@ -267,7 +249,7 @@ while 1:
 
     statusbar.text = 'current tile: \'%s\'' % current
 
-    pygame.draw.rect(screen, (30, 30, 30), (0, 0, tray_w, stage_h))
+    pygame.draw.rect(screen, (37, 37, 37), (0, 0, tray_w, stage_h))
     screen.blit(statusbar.render(), (0, stage_h))
     screen.blit(tiletray.render(), (0, 0))
 

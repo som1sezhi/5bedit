@@ -287,7 +287,7 @@ class StatusBar:
 tl_walls = ['/','8','w','€','²','¼','¶','º','/B']
 tl_bg = ['7','9','{','®']
 tl_hazards = ['0', '1', '2', '3']
-tl_interact = ['Q', ':']
+tl_interact = ['4', 'Q', ':']
 def get_tile(ch):
     return TrayEntry(tiles.tiles[ch].tray_icon, ch)
 el_walls = list(map(get_tile, tl_walls))

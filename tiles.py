@@ -113,6 +113,13 @@ class Tile:
             elif outline_mode == 2:
                 self.tray_icon = sprite.copy()
                 self.tray_icon.blit(get_outlines([False]*4, [False]*4, olset_factory), (0, 0))
+            elif sprite.get_size() != (30, 30):
+                w, h = sprite.get_size()
+                if w > h:
+                    ws, hs = 30, round(30 * h/w)
+                else:
+                    ws, hs = round(30 * w/h), 30
+                self.tray_icon = pygame.transform.scale(sprite, (ws, hs))
             else:
                 self.tray_icon = sprite
         else:
@@ -142,6 +149,7 @@ tiles['1'] = Tile(pygame.transform.rotate(tiles['0'].sprite, 180), cast_shadows=
 tiles['2'] = Tile(pygame.transform.rotate(tiles['0'].sprite, 90), cast_shadows="all")
 tiles['3'] = Tile(pygame.transform.rotate(tiles['0'].sprite, -90), cast_shadows="all")
 # interactive
+tiles['4'] = Tile(load_sprite('exit'), origin=(30, 90))
 tiles['Q'] = Tile(load_sprite('lever_yellow'), origin=(4, 0))
 tiles[':'] = Tile(load_sprite('wintoken'))
 

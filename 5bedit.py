@@ -86,6 +86,7 @@ def place_overlap(i, j, c):
                 lvloverlap[x][y][(x-i, y-j)] = c
                 #print('placed (%d, %d) [%s] at %d, %d' % (x-i, y-j, c, x, y))
     #print('end func call')
+    return tile_rect(i, j, lb-i, ub-j, rb-lb, db-ub)
 
 # delete overlapping bits of tile
 def del_overlap(i, j, c):
@@ -111,33 +112,38 @@ def del_overlap(i, j, c):
                 del lvloverlap[x][y][(x-i, y-j)]
                 #print('deleted (%d, %d) [%s] at %d, %d' % (x-i, y-j, c, x, y))
     #print('end func call')
+    return tile_rect(i, j, lb-i, ub-j, rb-lb, db-ub)
         
 def place_tile(i, j, c):
+    ur = [] # update rects
     # if overwriting tiles, remove the overlap they make
     if tiles.tiles[lvl[i][j]].origin != (0, 0):
-        del_overlap(i, j, lvl[i][j])
+        ur.append(del_overlap(i, j, lvl[i][j]))
     lvl[i][j] = c
     # place overlap
     if tiles.tiles[c].origin != (0,0):
-        place_overlap(i, j, c)
+        ur.append(place_overlap(i, j, c))
+    return tile_rect(i, j, -1, -1, 3, 3).unionall(ur)
     
 def bigbrush_place(mxtile, mytile, current):
+    ur = [] # update rects
     if mxtile > 0: # L
-        place_tile(mxtile - 1, mytile, current)
+        ur.append(place_tile(mxtile - 1, mytile, current))
         if mytile > 0: # LU
-            place_tile(mxtile - 1, mytile - 1, current)
+            ur.append(place_tile(mxtile - 1, mytile - 1, current))
         if mytile < lvl_h - 1: # LD
-            place_tile(mxtile - 1, mytile + 1, current)
+            ur.append(place_tile(mxtile - 1, mytile + 1, current))
     if mytile > 0: # U
-        place_tile(mxtile, mytile - 1, current)
+        ur.append(place_tile(mxtile, mytile - 1, current))
     if mxtile < lvl_w - 1: # R
-        place_tile(mxtile + 1, mytile, current)
+        ur.append(place_tile(mxtile + 1, mytile, current))
         if mytile > 0: # RU
-            place_tile(mxtile + 1, mytile - 1, current)
+            ur.append(place_tile(mxtile + 1, mytile - 1, current))
         if mytile < lvl_h - 1: # RD
-            place_tile(mxtile + 1, mytile + 1, current)
+            ur.append(place_tile(mxtile + 1, mytile + 1, current))
     if mytile < lvl_h - 1: # D
-        place_tile(mxtile, mytile + 1, current)
+        ur.append(place_tile(mxtile, mytile + 1, current))
+    return tile_rect(mxtile, mytile, -1, -1, 3, 3).unionall(ur)
 
 ########## draw loop ##########
 while 1:
@@ -209,17 +215,19 @@ while 1:
             mtile_rect = tile_rect(mxtile, mytile, 0, 0, 1, 1)
             if not space_down:
                 stage_urect = tile_rect(mxtile, mytile, -2, -2, 5, 5)
-                stage_urect_stg = stage_urect.move(-stage_rect.left, -stage_rect.top)
+                ur = [] # update rects
                 # paint tiles
                 if mL:
-                    place_tile(mxtile, mytile, current) 
+                    ur.append(place_tile(mxtile, mytile, current))
                     if z_down:
-                        bigbrush_place(mxtile, mytile, current)
+                        ur.append(bigbrush_place(mxtile, mytile, current))
                 # erase tiles
                 elif mR:
-                    place_tile(mxtile, mytile, '.')
+                    ur.append(place_tile(mxtile, mytile, '.'))
                     if z_down:
-                        bigbrush_place(mxtile, mytile, '.')
+                        ur.append(bigbrush_place(mxtile, mytile, '.'))
+                stage_urect.unionall_ip(ur)
+                stage_urect_stg = stage_urect.move(-stage_rect.left, -stage_rect.top)
                 screen.blit(stage.render_part(stage_urect_stg), stage_urect.topleft)
                 updaterects.append(stage_urect)
                 
